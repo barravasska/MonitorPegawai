@@ -355,6 +355,7 @@ const App: React.FC = () => {
             {/* 2. Modal Konfirmasi Hapus (Custom UI pengganti window.confirm) */}
             <ConfirmationModal 
                 isOpen={confirmModalOpen}
+                type="danger"  // ← Tambahkan ini
                 title="Hapus Data Pekerja?"
                 message="Data ini akan dihapus secara permanen dari database. Tindakan ini tidak dapat dibatalkan."
                 onCancel={() => setConfirmModalOpen(false)}
