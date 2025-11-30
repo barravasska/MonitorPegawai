@@ -1,5 +1,5 @@
 // src/App.tsx - Main Application Controller
-// Versi Final: Integrasi Database, Simulasi, dan UI Modal Modern
+// Versi Final: Mengganti window.confirm dengan Custom ConfirmationModal
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { RefreshCw, Zap, User, TrendingUp, Settings, Database as DatabaseIcon } from 'lucide-react';
@@ -12,6 +12,7 @@ import { DashboardPanel } from './components/DashboardPanel';
 import { DeviceManagementPanel } from './components/ManagementPanel';
 import { WorkerDetailModal } from './components/WorkerDetailModal';
 import { StatusModal } from './components/StatusModal';
+// IMPOR MODAL KONFIRMASI (Pastikan file ini ada)
 import { ConfirmationModal } from './components/ConfirmationModal';
 
 // Impor Service Database
@@ -20,7 +21,7 @@ import {
     registerDeviceToDB, pairDeviceInDB, unpairDeviceInDB 
 } from './services/dbServices'; 
 
-// Tipe data historis lokal
+// Tipe data historis
 interface HistoricalDataEntry {
     workerId: string;
     timestamp: string;
@@ -41,11 +42,11 @@ const App: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true); 
     const [currentPage, setCurrentPage] = useState<'dashboard' | 'management'>('dashboard');
     
-    // State Form Management
+    // State Form
     const [newDeviceId, setNewDeviceId] = useState<string>('');
     const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
 
-    // State untuk Status Modal (Success/Error)
+    // State untuk Modal Status (Success/Error)
     const [modalState, setModalState] = useState<{
         isOpen: boolean;
         type: 'success' | 'error' | 'warning';
@@ -58,16 +59,16 @@ const App: React.FC = () => {
         message: ''
     });
 
-    // State untuk Konfirmasi Hapus
+    // STATE BARU: Untuk Mengontrol Modal Konfirmasi Hapus
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
     const [workerToDelete, setWorkerToDelete] = useState<string | null>(null);
 
-    // Helper Modal
+    // Helper Modal Status
     const showModal = (type: 'success' | 'error' | 'warning', title: string, message: string) => {
         setModalState({ isOpen: true, type, title, message });
     };
 
-    // --- 2. INTEGRASI DATABASE: FETCH DATA SAAT LOAD ---
+    // --- 2. INTEGRASI DATABASE ---
     useEffect(() => {
         const initData = async () => {
             setIsLoading(true);
@@ -75,7 +76,6 @@ const App: React.FC = () => {
                 const workersFromDB = await fetchWorkers();
                 const devicesFromDB = await fetchDevices();
 
-                // Inisialisasi sensor untuk simulasi
                 const workersWithSensors = workersFromDB.map(w => ({
                     ...w,
                     initialStatus: RISK_STATUS.AMAN,
@@ -88,7 +88,6 @@ const App: React.FC = () => {
                 console.log("Data berhasil dimuat dari Supabase");
             } catch (error) {
                 console.error("Gagal memuat data:", error);
-                // showModal('error', 'Koneksi Gagal', 'Gagal memuat data dari database.');
             } finally {
                 setIsLoading(false);
             }
@@ -109,7 +108,6 @@ const App: React.FC = () => {
                 return prevData.map(worker => {
                     if (!worker.isPaired) return worker; 
 
-                    // Simulasi fluktuasi status
                     const newStatus: RiskStatus = Math.random() < 0.05
                         ? Object.values(RISK_STATUS)[Math.floor(Math.random() * 3)]
                         : worker.status;
@@ -117,7 +115,6 @@ const App: React.FC = () => {
                     const sensors = generateRandomSensorData(newStatus);
                     const determinedStatus = determineRiskStatus(sensors.gsr, sensors.imu, sensors.spo2);
                     
-                    // Log Peringatan
                     if (determinedStatus !== RISK_STATUS.AMAN && determinedStatus !== worker.status) {
                         const trigger = getPrimaryTrigger(sensors);
                         const action = determinedStatus === RISK_STATUS.WASAPADA 
@@ -137,7 +134,6 @@ const App: React.FC = () => {
                         ]);
                     }
 
-                    // Simpan data historis
                     newHistoricalEntries.push({
                         workerId: worker.id,
                         timestamp: currentTimestamp,
@@ -150,13 +146,11 @@ const App: React.FC = () => {
                 });
             });
 
-            // Batasi data historis (max 200 entri) untuk performa
             setHistoricalData(prevHistory => {
                 const newHistory = [...prevHistory, ...newHistoricalEntries];
                 return newHistory.length > 200 ? newHistory.slice(newHistory.length - 200) : newHistory;
             });
             
-            // Simulasi baterai
             setDeviceData(prevDevices => prevDevices.map(d => {
                 const statusActive: Device['status'] = 'Aktif';
                 return {
@@ -170,7 +164,7 @@ const App: React.FC = () => {
         return () => clearInterval(interval);
     }, [isSimulating, isLoading, workerData.length]); 
 
-    // --- 4. VIEW MODEL & HANDLERS ---
+    // --- 4. HANDLERS ---
     
     const { criticalWorkers, globalRiskMetrics } = useMemo(() => {
         const pairedWorkers = workerData.filter(w => w.isPaired);
@@ -192,7 +186,6 @@ const App: React.FC = () => {
         };
     }, [workerData]);
 
-    // Handler: Tambah Pekerja
     const handleAddWorker = async (newWorkerName: string, newWorkerJob: string, newWorkerAge: number) => {
         try {
             const savedWorker = await addWorkerToDB({ 
@@ -220,19 +213,21 @@ const App: React.FC = () => {
         }
     };
 
-    // Handler: Inisiasi Hapus Pekerja (Buka Modal Konfirmasi)
+    // --- LOGIKA HAPUS DENGAN MODAL BARU ---
+    
+    // Langkah 1: Dipanggil saat tombol sampah diklik
+    // Fungsi ini BUKAN menghapus, tapi MEMBUKA MODAL KONFIRMASI
     const initiateDeleteWorker = (workerId: string) => {
         setWorkerToDelete(workerId);
-        setConfirmModalOpen(true);
+        setConfirmModalOpen(true); // Buka modal konfirmasi
     };
 
-    // Handler: Konfirmasi Hapus Pekerja
+    // Langkah 2: Dipanggil saat user klik "Ya, Hapus" di modal
     const confirmDeleteWorker = async () => {
         if (!workerToDelete) return;
-        setConfirmModalOpen(false); // Tutup modal konfirmasi
+        setConfirmModalOpen(false); // Tutup modal dulu
 
         const worker = workerData.find(w => w.id === workerToDelete);
-        // Jika masih paired, unpair dulu
         if (worker?.isPaired && worker.deviceId) {
             await handleUnpairDevice(workerToDelete, worker.deviceId);
         }
@@ -240,7 +235,7 @@ const App: React.FC = () => {
         try {
             await deleteWorkerFromDB(workerToDelete);
             setWorkerData(prevData => prevData.filter(w => w.id !== workerToDelete));
-            showModal('success', 'Terhapus', 'Data pekerja berhasil dihapus.');
+            showModal('success', 'Terhapus', 'Data pekerja berhasil dihapus permanen.');
         } catch (error) {
             showModal('error', 'Gagal', 'Gagal menghapus data dari database.');
         } finally {
@@ -248,7 +243,6 @@ const App: React.FC = () => {
         }
     };
 
-    // Handler: Registrasi Alat
     const handleRegisterDevice = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newDeviceId || !selectedWorkerId) return;
@@ -286,11 +280,9 @@ const App: React.FC = () => {
         }
     };
 
-    // Handler: Unpair Alat
     const handleUnpairDevice = async (workerId: string, deviceId: string) => {
         try {
             await unpairDeviceInDB(workerId, deviceId);
-            
             setWorkerData(prev => prev.map(w => 
                 w.id === workerId 
                 ? { ...w, deviceId: null, isPaired: false, status: RISK_STATUS.AMAN, sensors: { gsr: 0, imu: 0, spo2: 0, timestamp: '-' } } 
@@ -328,7 +320,8 @@ const App: React.FC = () => {
                     deviceData={deviceData}
                     handleUnpairDevice={handleUnpairDevice}
                     handleAddWorker={handleAddWorker}
-                    handleDeleteWorker={initiateDeleteWorker} // Menggunakan fungsi inisiasi
+                    // PENTING: Pass fungsi 'initiate' bukan 'confirm'
+                    handleDeleteWorker={initiateDeleteWorker} 
                 />;
             case 'dashboard':
             default:
@@ -359,11 +352,11 @@ const App: React.FC = () => {
                 onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
             />
 
-            {/* 2. Modal Konfirmasi Hapus */}
+            {/* 2. Modal Konfirmasi Hapus (Custom UI pengganti window.confirm) */}
             <ConfirmationModal 
                 isOpen={confirmModalOpen}
                 title="Hapus Data Pekerja?"
-                message="Data ini akan dihapus secara permanen dari database sistem. Alat yang terhubung akan diputus otomatis."
+                message="Data ini akan dihapus secara permanen dari database. Tindakan ini tidak dapat dibatalkan."
                 onCancel={() => setConfirmModalOpen(false)}
                 onConfirm={confirmDeleteWorker}
             />
@@ -373,7 +366,7 @@ const App: React.FC = () => {
                 <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                     <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2 tracking-tight">
                         <Zap className="w-8 h-8 text-red-600 fill-red-600" /> 
-                        <span>SMART-G <span className="text-gray-400 font-light">KELOMPOK 8</span></span>
+                        <span>SMART-G <span className="text-gray-400 font-light">Guardian</span></span>
                     </h1>
                     <div className="flex items-center gap-3">
                         <button onClick={() => setCurrentPage('dashboard')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${currentPage === 'dashboard' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
@@ -419,7 +412,7 @@ const App: React.FC = () => {
                         {isLoading ? 'Connecting...' : 'Connected to Supabase'}
                     </span>
                 </div>
-                <p>SMART-G © 2025 | PKM Karsa Cipta</p>
+                <p>SMART-G Safety Guardian © 2025 | PKM Karsa Cipta</p>
             </footer>
         </div>
     );
