@@ -367,7 +367,7 @@ const App: React.FC = () => {
                 <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                     <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2 tracking-tight">
                         <Zap className="w-8 h-8 text-red-600 fill-red-600" /> 
-                        <span>SMART-G <span className="text-gray-400 font-light">Guardian</span></span>
+                        <span>SMART-G <span className="text-gray-400 font-light">KELOMPOK-8</span></span>
                     </h1>
                     <div className="flex items-center gap-3">
                         <button onClick={() => setCurrentPage('dashboard')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${currentPage === 'dashboard' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
@@ -413,7 +413,7 @@ const App: React.FC = () => {
                         {isLoading ? 'Connecting...' : 'Connected to Supabase'}
                     </span>
                 </div>
-                <p>SMART-G Safety Guardian © 2025 | PKM Karsa Cipta</p>
+                <p>SMART-G © 2025 | PKM Karsa Cipta</p>
             </footer>
         </div>
     );
