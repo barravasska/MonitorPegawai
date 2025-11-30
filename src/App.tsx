@@ -1,8 +1,8 @@
 // src/App.tsx - Main Application Controller
-// Versi Final: Mengganti window.confirm dengan Custom ConfirmationModal
+// Versi Final: Integrasi Database + UI Modal Modern + Responsive Mobile Navbar
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Zap, User, TrendingUp, Settings, Database as DatabaseIcon } from 'lucide-react';
+import { RefreshCw, Zap, User, TrendingUp, Settings, Database as DatabaseIcon, Menu, X } from 'lucide-react';
 // Impor Tipe Data
 import { Worker, Device, AlertLogEntry, RiskStatus } from './models/types'; 
 // Impor Logika Bisnis
@@ -42,6 +42,9 @@ const App: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true); 
     const [currentPage, setCurrentPage] = useState<'dashboard' | 'management'>('dashboard');
     
+    // State UI Mobile Menu
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
     // State Form
     const [newDeviceId, setNewDeviceId] = useState<string>('');
     const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
@@ -181,8 +184,8 @@ const App: React.FC = () => {
         ];
 
         return { 
-            criticalWorkers: critical, 
-            globalRiskMetrics: metrics 
+        criticalWorkers: critical, 
+        globalRiskMetrics: metrics 
         };
     }, [workerData]);
 
@@ -320,7 +323,6 @@ const App: React.FC = () => {
                     deviceData={deviceData}
                     handleUnpairDevice={handleUnpairDevice}
                     handleAddWorker={handleAddWorker}
-                    // PENTING: Pass fungsi 'initiate' bukan 'confirm'
                     handleDeleteWorker={initiateDeleteWorker} 
                 />;
             case 'dashboard':
@@ -352,41 +354,94 @@ const App: React.FC = () => {
                 onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
             />
 
-            {/* 2. Modal Konfirmasi Hapus (Custom UI pengganti window.confirm) */}
+            {/* 2. Modal Konfirmasi Hapus */}
             <ConfirmationModal 
                 isOpen={confirmModalOpen}
-                type="danger"  // ← Tambahkan ini
+                type="danger"  // ← PASTIKAN INI ADA
                 title="Hapus Data Pekerja?"
                 message="Data ini akan dihapus secara permanen dari database. Tindakan ini tidak dapat dibatalkan."
                 onCancel={() => setConfirmModalOpen(false)}
                 onConfirm={confirmDeleteWorker}
             />
 
-            {/* Header */}
+            {/* Header Responsif */}
             <header className="bg-white shadow-sm sticky top-0 z-20 border-b border-gray-100">
-                <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2 tracking-tight">
-                        <Zap className="w-8 h-8 text-red-600 fill-red-600" /> 
-                        <span>SMART-G <span className="text-gray-400 font-light">KELOMPOK-8</span></span>
-                    </h1>
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => setCurrentPage('dashboard')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${currentPage === 'dashboard' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
-                            <TrendingUp className="w-4 h-4" /> Dashboard
-                        </button>
-                        <button onClick={() => setCurrentPage('management')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${currentPage === 'management' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
-                            <Settings className="w-4 h-4" /> Manajemen
-                        </button>
+                <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center">
+                        <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2 tracking-tight">
+                            <Zap className="w-8 h-8 text-red-600 fill-red-600" /> 
+                            <span>SMART-G <span className="hidden sm:inline text-gray-400 font-light">KELOMPOK 8</span></span>
+                        </h1>
                         
-                        <div className="h-6 w-px bg-gray-200 mx-2"></div>
+                        {/* Desktop Menu */}
+                        <div className="hidden md:flex items-center gap-3">
+                            <button 
+                                onClick={() => setCurrentPage('dashboard')} 
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${currentPage === 'dashboard' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
+                            >
+                                <TrendingUp className="w-4 h-4" /> Dashboard
+                            </button>
+                            <button 
+                                onClick={() => setCurrentPage('management')} 
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${currentPage === 'management' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
+                            >
+                                <Settings className="w-4 h-4" /> Manajemen
+                            </button>
+                            
+                            <div className="h-6 w-px bg-gray-200 mx-2"></div>
 
-                        <button 
-                            onClick={() => setIsSimulating(!isSimulating)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${isSimulating ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
-                        >
-                            <RefreshCw className={`w-4 h-4 ${isSimulating ? 'animate-spin' : ''}`} />
-                            {isSimulating ? 'Live' : 'Paused'}
-                        </button>
+                            <button 
+                                onClick={() => setIsSimulating(!isSimulating)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${isSimulating ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
+                            >
+                                <RefreshCw className={`w-4 h-4 ${isSimulating ? 'animate-spin' : ''}`} />
+                                {isSimulating ? 'Live' : 'Paused'}
+                            </button>
+                        </div>
+
+                        {/* Mobile Hamburger Button */}
+                        <div className="md:hidden">
+                            <button 
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                            >
+                                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Mobile Dropdown Menu */}
+                    {isMobileMenuOpen && (
+                        <div className="md:hidden mt-4 pb-4 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200">
+                            <div className="flex flex-col gap-2 pt-4">
+                                <button 
+                                    onClick={() => { setCurrentPage('dashboard'); setIsMobileMenuOpen(false); }} 
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${currentPage === 'dashboard' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+                                >
+                                    <TrendingUp className="w-5 h-5" /> Dashboard
+                                </button>
+                                <button 
+                                    onClick={() => { setCurrentPage('management'); setIsMobileMenuOpen(false); }} 
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${currentPage === 'management' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+                                >
+                                    <Settings className="w-5 h-5" /> Manajemen Alat & Pekerja
+                                </button>
+                                
+                                <div className="h-px bg-gray-200 my-2"></div>
+
+                                <button 
+                                    onClick={() => { setIsSimulating(!isSimulating); setIsMobileMenuOpen(false); }}
+                                    className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${isSimulating ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-500 border border-gray-200'}`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <RefreshCw className={`w-5 h-5 ${isSimulating ? 'animate-spin' : ''}`} />
+                                        Status Simulasi
+                                    </span>
+                                    <span>{isSimulating ? 'Live' : 'Paused'}</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </header>
 
