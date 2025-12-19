@@ -370,7 +370,7 @@ const App: React.FC = () => {
                     <div className="flex justify-between items-center">
                         <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2 tracking-tight">
                             <Zap className="w-8 h-8 text-red-600 fill-red-600" /> 
-                            <span>SMART-G <span className="hidden sm:inline text-gray-400 font-light">KELOMPOK 8</span></span>
+                            <span>SMART-G <span className="hidden sm:inline text-gray-400 font-light">KELOMPOK 7</span></span>
                         </h1>
                         
                         {/* Desktop Menu */}
